@@ -122,7 +122,13 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 12px;
+            align-items: end;
             margin-bottom: 20px;
+        }
+
+        .label-text {
+            min-height: 1.25rem;
+            line-height: 1.25rem;
         }
 
         label {
@@ -291,7 +297,7 @@
 
     <div class="options">
         <label>
-            Format
+            <span class="label-text">Format</span>
             <select id="format">
                 <option value="hex" selected>Hex (lowercase)</option>
                 <option value="hex-upper">Hex (uppercase)</option>
@@ -300,7 +306,7 @@
             </select>
         </label>
         <label>
-            Length (bytes)
+            <span class="label-text">Length (bytes)</span>
             <select id="length">
                 <option value="16">16 (128-bit)</option>
                 <option value="32" selected>32 (256-bit)</option>
@@ -309,8 +315,8 @@
             </select>
         </label>
         <label>
-            Prefix <span style="font-weight:400">(optional)</span>
-            <input type="text" id="prefix" placeholder="sk_live_" maxlength="32" spellcheck="false" autocomplete="off">
+            <span class="label-text">Prefix</span>
+            <input type="text" id="prefix" placeholder="sk_live_ (optional)" maxlength="32" spellcheck="false" autocomplete="off">
         </label>
     </div>
 
@@ -340,6 +346,7 @@
 <script>
     const $ = (id) => document.getElementById(id);
     let themeOverridden = false;
+    let currentRawKey = '';
 
     const els = {
         key: $('key'),
@@ -423,20 +430,31 @@
         els.entropy.textContent = `${byteLength * 8} bits of entropy`;
     }
 
-    function generateKey() {
-        const prefix = els.prefix.value.trim();
-        const raw = generateRawKey();
-        const key = prefix ? prefix + raw : raw;
+    function getPrefix() {
+        return els.prefix.value.trim();
+    }
 
+    function getFullKey() {
+        const prefix = getPrefix();
+        return prefix ? prefix + currentRawKey : currentRawKey;
+    }
+
+    function updateKeyDisplay() {
+        const key = getFullKey();
         els.key.textContent = key;
         updateMeta(key);
+    }
+
+    function generateKey() {
+        currentRawKey = generateRawKey();
+        updateKeyDisplay();
         setStatus('Generated at ' + new Date().toLocaleTimeString());
         els.copyBtn.classList.remove('copied');
         els.copyBtn.textContent = 'Copy Key';
     }
 
     async function copyKey() {
-        const key = els.key.textContent;
+        const key = getFullKey();
         if (!key) return;
 
         try {
@@ -472,7 +490,7 @@
         generateKey();
     });
     els.length.addEventListener('change', generateKey);
-    els.prefix.addEventListener('change', generateKey);
+    els.prefix.addEventListener('input', updateKeyDisplay);
 
     els.key.addEventListener('click', () => {
         const range = document.createRange();
