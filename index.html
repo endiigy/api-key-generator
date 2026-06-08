@@ -1,20 +1,47 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Generate cryptographically secure API keys locally in your browser.">
+    <meta name="color-scheme" content="light dark">
     <title>API Key Generator</title>
 
     <style>
         :root {
-            --bg: #f8fafc;
+            --bg: #f1f5f9;
             --card: #ffffff;
             --text: #0f172a;
             --muted: #64748b;
             --border: #cbd5e1;
+            --input-bg: #f8fafc;
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
+            --secondary: #e2e8f0;
+            --secondary-hover: #cbd5e1;
+            --secondary-text: #334155;
+            --success: #16a34a;
+            --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+            --key-bg: #f8fafc;
+            --focus-ring: rgba(37, 99, 235, 0.35);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0b1120;
+            --card: #111827;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --border: #334155;
+            --input-bg: #0f172a;
+            --primary: #3b82f6;
+            --primary-hover: #60a5fa;
+            --secondary: #1e293b;
+            --secondary-hover: #334155;
+            --secondary-text: #e2e8f0;
+            --success: #4ade80;
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+            --key-bg: #0f172a;
+            --focus-ring: rgba(96, 165, 250, 0.4);
         }
 
         * {
@@ -32,123 +59,453 @@
                          "Segoe UI", Roboto, sans-serif;
             color: var(--text);
             padding: 20px;
+            transition: background 0.2s ease, color 0.2s ease;
         }
 
         .card {
             width: 100%;
-            max-width: 900px;
+            max-width: 720px;
             background: var(--card);
+            border: 1px solid var(--border);
             border-radius: 16px;
-            padding: 32px;
-            box-shadow: 0 10px 30px rgba(0,0,0,.08);
+            padding: 28px 32px 32px;
+            box-shadow: var(--shadow);
+            transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        h1 {
-            margin-top: 0;
-            margin-bottom: 8px;
+        .header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .header-text h1 {
+            margin: 0 0 6px;
+            font-size: 1.5rem;
+            letter-spacing: -0.02em;
         }
 
         .subtitle {
             color: var(--muted);
-            margin-bottom: 24px;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .icon-btn {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--input-bg);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .icon-btn:hover {
+            background: var(--secondary);
+        }
+
+        .icon-btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--muted);
+        }
+
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text);
+            font: inherit;
+            font-weight: 400;
+        }
+
+        select:focus-visible,
+        input[type="text"]:focus-visible {
+            outline: 2px solid var(--focus-ring);
+            border-color: var(--primary);
+        }
+
+        .key-wrap {
+            position: relative;
+            margin-bottom: 16px;
         }
 
         .key {
-            font-family: Consolas, Monaco, monospace;
-            font-size: 1.1rem;
+            font-family: ui-monospace, Consolas, Monaco, monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
             word-break: break-all;
-            background: #f8fafc;
+            background: var(--key-bg);
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 18px;
-            margin-bottom: 24px;
+            padding: 16px 48px 16px 16px;
+            min-height: 56px;
+            cursor: text;
+            user-select: all;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .key:focus-visible {
+            outline: 2px solid var(--focus-ring);
+            border-color: var(--primary);
+        }
+
+        .key-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            margin-bottom: 20px;
+            font-size: 0.8125rem;
+            color: var(--muted);
+        }
+
+        .key-meta span {
+            font-variant-numeric: tabular-nums;
         }
 
         .buttons {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
         }
 
         button {
             border: none;
             border-radius: 8px;
-            background: var(--primary);
-            color: white;
-            padding: 12px 18px;
+            padding: 11px 18px;
             cursor: pointer;
-            font-size: 1rem;
+            font: inherit;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            transition: background 0.15s ease, transform 0.1s ease;
         }
 
-        button:hover {
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
             background: var(--primary-hover);
         }
 
+        .btn-secondary {
+            background: var(--secondary);
+            color: var(--secondary-text);
+        }
+
+        .btn-secondary:hover {
+            background: var(--secondary-hover);
+        }
+
+        .btn-secondary.copied {
+            background: color-mix(in srgb, var(--success) 18%, var(--secondary));
+            color: var(--success);
+        }
+
         .status {
-            margin-top: 16px;
+            margin-top: 14px;
+            min-height: 22px;
+            font-size: 0.875rem;
             color: var(--muted);
-            min-height: 20px;
+        }
+
+        .status.success {
+            color: var(--success);
         }
 
         .footer {
             margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
             color: var(--muted);
-            font-size: .9rem;
+            font-size: 0.8125rem;
+            line-height: 1.6;
+        }
+
+        .footer kbd {
+            display: inline-block;
+            padding: 1px 6px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--input-bg);
+            font-family: inherit;
+            font-size: 0.75rem;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                transition: none !important;
+            }
         }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>API Key Generator</h1>
-
-    <div class="subtitle">
-        Generate cryptographically secure API keys in your browser.
+    <div class="header">
+        <div class="header-text">
+            <h1>API Key Generator</h1>
+            <p class="subtitle">Generate cryptographically secure API keys in your browser.</p>
+        </div>
+        <button type="button" class="icon-btn" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
+            <span id="themeIcon" aria-hidden="true">🌙</span>
+        </button>
     </div>
 
-    <div class="key" id="key"></div>
+    <div class="options">
+        <label>
+            Format
+            <select id="format">
+                <option value="hex" selected>Hex (lowercase)</option>
+                <option value="hex-upper">Hex (uppercase)</option>
+                <option value="base64url">Base64 URL-safe</option>
+                <option value="uuid">UUID v4</option>
+            </select>
+        </label>
+        <label>
+            Length (bytes)
+            <select id="length">
+                <option value="16">16 (128-bit)</option>
+                <option value="32" selected>32 (256-bit)</option>
+                <option value="48">48 (384-bit)</option>
+                <option value="64">64 (512-bit)</option>
+            </select>
+        </label>
+        <label>
+            Prefix <span style="font-weight:400">(optional)</span>
+            <input type="text" id="prefix" placeholder="sk_live_" maxlength="32" spellcheck="false" autocomplete="off">
+        </label>
+    </div>
+
+    <div class="key-wrap">
+        <div class="key" id="key" tabindex="0" role="textbox" aria-readonly="true" aria-label="Generated API key"></div>
+    </div>
+
+    <div class="key-meta">
+        <span id="charCount">— characters</span>
+        <span id="entropy">— bits of entropy</span>
+    </div>
 
     <div class="buttons">
-        <button onclick="generateKey()">Generate New Key</button>
-        <button onclick="copyKey()">Copy Key</button>
+        <button type="button" class="btn-primary" id="generateBtn">Generate New Key</button>
+        <button type="button" class="btn-secondary" id="copyBtn">Copy Key</button>
     </div>
 
-    <div class="status" id="status"></div>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
 
     <div class="footer">
         No data is transmitted. All keys are generated locally in your browser.
+        <br>
+        Shortcuts: <kbd>G</kbd> generate · <kbd>C</kbd> copy · <kbd>T</kbd> toggle theme
     </div>
 </div>
 
 <script>
-    function guidN() {
-        return crypto.randomUUID().replaceAll('-', '');
+    const $ = (id) => document.getElementById(id);
+    let themeOverridden = false;
+
+    const els = {
+        key: $('key'),
+        status: $('status'),
+        format: $('format'),
+        length: $('length'),
+        prefix: $('prefix'),
+        charCount: $('charCount'),
+        entropy: $('entropy'),
+        themeToggle: $('themeToggle'),
+        themeIcon: $('themeIcon'),
+        generateBtn: $('generateBtn'),
+        copyBtn: $('copyBtn'),
+    };
+
+    function getSystemTheme() {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.dataset.theme = theme;
+        els.themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+        els.themeToggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+
+    function toggleTheme() {
+        themeOverridden = true;
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+    }
+
+    function randomBytes(n) {
+        const buf = new Uint8Array(n);
+        crypto.getRandomValues(buf);
+        return buf;
+    }
+
+    function bytesToHex(bytes, upper = false) {
+        const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+        return upper ? hex.toUpperCase() : hex;
+    }
+
+    function bytesToBase64Url(bytes) {
+        let binary = '';
+        for (const b of bytes) binary += String.fromCharCode(b);
+        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function generateRawKey() {
+        const format = els.format.value;
+        const byteLength = format === 'uuid' ? 16 : Number(els.length.value);
+        const bytes = randomBytes(byteLength);
+
+        switch (format) {
+            case 'hex-upper':
+                return bytesToHex(bytes, true);
+            case 'base64url':
+                return bytesToBase64Url(bytes);
+            case 'uuid': {
+                const hex = bytesToHex(bytes);
+                return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+            }
+            default:
+                return bytesToHex(bytes);
+        }
+    }
+
+    function updateLengthDisabled() {
+        els.length.disabled = els.format.value === 'uuid';
+    }
+
+    function setStatus(message, isSuccess = false) {
+        els.status.textContent = message;
+        els.status.classList.toggle('success', isSuccess);
+    }
+
+    function updateMeta(key) {
+        const format = els.format.value;
+        const byteLength = format === 'uuid' ? 16 : Number(els.length.value);
+        els.charCount.textContent = `${key.length} characters`;
+        els.entropy.textContent = `${byteLength * 8} bits of entropy`;
     }
 
     function generateKey() {
-        const key = guidN() + guidN();
+        const prefix = els.prefix.value.trim();
+        const raw = generateRawKey();
+        const key = prefix ? prefix + raw : raw;
 
-        document.getElementById('key').textContent = key;
-        document.getElementById('status').textContent =
-            'Generated at ' + new Date().toLocaleTimeString();
+        els.key.textContent = key;
+        updateMeta(key);
+        setStatus('Generated at ' + new Date().toLocaleTimeString());
+        els.copyBtn.classList.remove('copied');
+        els.copyBtn.textContent = 'Copy Key';
     }
 
     async function copyKey() {
-        const key = document.getElementById('key').textContent;
+        const key = els.key.textContent;
+        if (!key) return;
 
         try {
             await navigator.clipboard.writeText(key);
-            document.getElementById('status').textContent =
-                'Key copied to clipboard.';
+            setStatus('Key copied to clipboard.', true);
+            els.copyBtn.classList.add('copied');
+            els.copyBtn.textContent = 'Copied!';
+            setTimeout(() => {
+                els.copyBtn.classList.remove('copied');
+                els.copyBtn.textContent = 'Copy Key';
+            }, 1800);
         } catch {
-            document.getElementById('status').textContent =
-                'Unable to access clipboard.';
+            setStatus('Unable to access clipboard. Select the key and copy manually.');
         }
     }
+
+    function isTypingTarget(el) {
+        return el instanceof HTMLInputElement ||
+               el instanceof HTMLTextAreaElement ||
+               el instanceof HTMLSelectElement ||
+               el.isContentEditable;
+    }
+
+    // Init
+    applyTheme(getSystemTheme());
+    updateLengthDisabled();
+
+    els.generateBtn.addEventListener('click', generateKey);
+    els.copyBtn.addEventListener('click', copyKey);
+    els.themeToggle.addEventListener('click', toggleTheme);
+    els.format.addEventListener('change', () => {
+        updateLengthDisabled();
+        generateKey();
+    });
+    els.length.addEventListener('change', generateKey);
+    els.prefix.addEventListener('change', generateKey);
+
+    els.key.addEventListener('click', () => {
+        const range = document.createRange();
+        range.selectNodeContents(els.key);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (isTypingTarget(document.activeElement)) return;
+
+        const key = e.key.toLowerCase();
+        if (key === 'g') {
+            e.preventDefault();
+            generateKey();
+        } else if (key === 'c') {
+            e.preventDefault();
+            copyKey();
+        } else if (key === 't') {
+            e.preventDefault();
+            toggleTheme();
+        }
+    });
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!themeOverridden) {
+            applyTheme(e.matches ? 'dark' : 'light');
+        }
+    });
 
     generateKey();
 </script>
 
 </body>
 </html>
-```
