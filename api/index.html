@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>API Key</title>
+    <style>
+        body {
+            margin: 16px;
+            font: 14px/1.5 ui-monospace, Consolas, Monaco, monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body></body>
+<script src="../key.js"></script>
+<script>
+    const params = new URLSearchParams(location.search);
+    const output = params.get('output') === 'json' ? 'json' : 'text';
+    const result = KeyGen.generate(KeyGen.optionsFromParams(params));
+    KeyGen.renderOutput(result, output);
+</script>
+</html>
