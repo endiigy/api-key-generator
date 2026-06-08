@@ -275,6 +275,11 @@
             font-size: 0.75rem;
         }
 
+        .footer code {
+            font-family: ui-monospace, Consolas, Monaco, monospace;
+            font-size: 0.75rem;
+        }
+
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
                 transition: none !important;
@@ -340,9 +345,12 @@
         No data is transmitted. All keys are generated locally in your browser.
         <br>
         Shortcuts: <kbd>G</kbd> generate · <kbd>C</kbd> copy · <kbd>T</kbd> toggle theme
+        <br>
+        URL API: <code>/api/?prefix=fp_</code> · <code>/?prefix=fp_&amp;output=json</code>
     </div>
 </div>
 
+<script src="key.js"></script>
 <script>
     const $ = (id) => document.getElementById(id);
     let themeOverridden = false;
@@ -378,40 +386,10 @@
         applyTheme(next);
     }
 
-    function randomBytes(n) {
-        const buf = new Uint8Array(n);
-        crypto.getRandomValues(buf);
-        return buf;
-    }
-
-    function bytesToHex(bytes, upper = false) {
-        const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-        return upper ? hex.toUpperCase() : hex;
-    }
-
-    function bytesToBase64Url(bytes) {
-        let binary = '';
-        for (const b of bytes) binary += String.fromCharCode(b);
-        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    }
-
     function generateRawKey() {
         const format = els.format.value;
         const byteLength = format === 'uuid' ? 16 : Number(els.length.value);
-        const bytes = randomBytes(byteLength);
-
-        switch (format) {
-            case 'hex-upper':
-                return bytesToHex(bytes, true);
-            case 'base64url':
-                return bytesToBase64Url(bytes);
-            case 'uuid': {
-                const hex = bytesToHex(bytes);
-                return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-            }
-            default:
-                return bytesToHex(bytes);
-        }
+        return KeyGen.generate({ format, byteLength, prefix: '' }).rawKey;
     }
 
     function updateLengthDisabled() {
@@ -478,7 +456,44 @@
                el.isContentEditable;
     }
 
+    function applyParamsToForm(params) {
+        const prefix = params.get('prefix');
+        if (prefix !== null) els.prefix.value = prefix;
+
+        const format = params.get('format');
+        if (format && KeyGen.FORMATS.has(format)) els.format.value = format;
+
+        const length = params.get('length');
+        if (length && KeyGen.LENGTHS.has(Number(length))) els.length.value = length;
+    }
+
+    function maybeApiMode() {
+        const params = new URLSearchParams(location.search);
+        const output = params.get('output');
+
+        if (output === 'text' || output === 'json') {
+            const result = KeyGen.generate(KeyGen.optionsFromParams(params));
+            document.head.innerHTML = '<meta charset="utf-8"><meta name="robots" content="noindex"><title>API Key</title>';
+            document.body.innerHTML = '';
+            document.body.style.margin = '16px';
+            document.body.style.font = '14px/1.5 ui-monospace, Consolas, Monaco, monospace';
+            document.body.style.whiteSpace = 'pre-wrap';
+            document.body.style.wordBreak = 'break-all';
+            KeyGen.renderOutput(result, output);
+            return true;
+        }
+
+        if ([...params.keys()].length > 0) {
+            applyParamsToForm(params);
+        }
+
+        return false;
+    }
+
     // Init
+    if (maybeApiMode()) {
+        // Plain text / JSON response — UI not shown
+    } else {
     applyTheme(getSystemTheme());
     updateLengthDisabled();
 
@@ -523,6 +538,7 @@
     });
 
     generateKey();
+    }
 </script>
 
 </body>
